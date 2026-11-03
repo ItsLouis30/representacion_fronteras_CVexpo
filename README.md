@@ -1,4 +1,4 @@
-# Laboratorio B-Rep
+# Laboratorio Representación de Fronteras B-Rep
 
 Aplicación web didáctica para explorar la representación de fronteras, validar defectos frecuentes y observar una secuencia simplificada de operadores de Euler.
 
