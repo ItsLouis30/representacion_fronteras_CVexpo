@@ -1,0 +1,207 @@
+<!doctype html>
+<html lang="es">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta
+      name="description"
+      content="Laboratorio interactivo para explorar, validar y construir modelos Boundary Representation (B-Rep)."
+    />
+    <title>Laboratorio B-Rep | Computación Visual</title>
+  </head>
+  <body>
+    <header class="site-header">
+      <div class="brand-block">
+        <p class="eyebrow">Computación Visual · Grupo 06</p>
+        <h1>Laboratorio B-Rep</h1>
+        <p class="subtitle">Exploración, validación y construcción de fronteras tridimensionales.</p>
+      </div>
+    </header>
+
+    <main class="app-shell">
+      <nav class="mode-tabs" aria-label="Modos del laboratorio">
+        <button class="mode-tab is-active" data-mode="explore" type="button">
+          <span>01</span> Explorar B-Rep
+        </button>
+        <button class="mode-tab" data-mode="validate" type="button">
+          <span>02</span> Validar modelo
+        </button>
+        <button class="mode-tab" data-mode="build" type="button">
+          <span>03</span> Construcción paso a paso
+        </button>
+      </nav>
+
+      <section class="workspace" aria-label="Laboratorio interactivo B-Rep">
+        <div class="viewer-panel">
+          <div class="viewer-heading">
+            <div>
+              <p class="section-kicker" id="viewer-kicker">Modo de exploración</p>
+              <h2 id="viewer-title">Cubo B-Rep</h2>
+            </div>
+            <span class="status-badge status-badge--valid" id="status-badge">Modelo válido</span>
+          </div>
+
+          <div class="canvas-wrap" id="canvas-wrap">
+            <canvas id="brep-canvas" aria-label="Visualización tridimensional del modelo B-Rep"></canvas>
+            <div class="canvas-note">Arrastra para rotar · Rueda para acercar · Selecciona una cara</div>
+            <div class="formula-card" aria-live="polite">
+              <span>Característica de Euler</span>
+              <strong id="euler-formula">8 − 12 + 6 = 2</strong>
+            </div>
+          </div>
+        </div>
+
+        <aside class="control-panel">
+          <section class="control-section mode-section" data-section="explore">
+            <div class="section-number">01</div>
+            <div class="section-copy">
+              <h3>Modelo de estudio</h3>
+              <p>Compara distintas fronteras cerradas y observa sus entidades fundamentales.</p>
+            </div>
+            <label class="field-label" for="model-select">Sólido</label>
+            <select id="model-select" class="select-control">
+              <option value="cube">Cubo</option>
+              <option value="tetrahedron">Tetraedro</option>
+              <option value="prism">Prisma triangular</option>
+            </select>
+          </section>
+
+          <section class="control-section mode-section is-hidden" data-section="validate">
+            <div class="section-number">02</div>
+            <div class="section-copy">
+              <h3>Casos de validación</h3>
+              <p>Introduce un defecto controlado y observa qué reglas deja de cumplir la frontera.</p>
+            </div>
+            <div class="defect-list" id="defect-list">
+              <button class="defect-button is-active" data-defect="valid" type="button">
+                <span class="defect-dot defect-dot--green"></span>
+                Modelo válido
+              </button>
+              <button class="defect-button" data-defect="opening" type="button">
+                <span class="defect-dot"></span>
+                Eliminar una cara
+              </button>
+              <button class="defect-button" data-defect="inverted" type="button">
+                <span class="defect-dot"></span>
+                Invertir orientación
+              </button>
+              <button class="defect-button" data-defect="nonmanifold" type="button">
+                <span class="defect-dot"></span>
+                Arista non-manifold
+              </button>
+              <button class="defect-button" data-defect="degenerate" type="button">
+                <span class="defect-dot"></span>
+                Cara degenerada
+              </button>
+              <button class="defect-button" data-defect="selfintersection" type="button">
+                <span class="defect-dot"></span>
+                Autointersección
+              </button>
+            </div>
+          </section>
+
+          <section class="control-section mode-section is-hidden" data-section="build">
+            <div class="section-number">03</div>
+            <div class="section-copy">
+              <h3>Operadores de Euler</h3>
+              <p>Construye un prisma mediante una secuencia didáctica de operaciones topológicas.</p>
+            </div>
+            <div class="operator-card">
+              <span id="operator-name">MVFS</span>
+              <strong id="operator-title">Crear estructura inicial</strong>
+              <p id="operator-description">Se crea el primer vértice, una cara y la envolvente inicial.</p>
+            </div>
+            <div class="step-progress" aria-label="Progreso de construcción">
+              <span id="step-label">Paso 1 de 8</span>
+              <div class="progress-track"><div id="progress-bar"></div></div>
+            </div>
+            <div class="step-actions">
+              <button class="secondary-button" id="previous-step" type="button">Anterior</button>
+              <button class="primary-button" id="next-step" type="button">Siguiente paso</button>
+            </div>
+          </section>
+
+          <section class="display-section">
+            <div class="display-heading">
+              <h3>Capas visibles</h3>
+              <button class="text-button" id="reset-camera" type="button">Restablecer vista</button>
+            </div>
+            <div class="toggle-grid">
+              <label class="toggle-row">
+                <span><i class="legend-swatch legend-swatch--face"></i>Caras</span>
+                <input id="toggle-faces" type="checkbox" checked />
+              </label>
+              <label class="toggle-row">
+                <span><i class="legend-swatch legend-swatch--edge"></i>Aristas</span>
+                <input id="toggle-edges" type="checkbox" checked />
+              </label>
+              <label class="toggle-row">
+                <span><i class="legend-swatch legend-swatch--vertex"></i>Vértices</span>
+                <input id="toggle-vertices" type="checkbox" checked />
+              </label>
+              <label class="toggle-row">
+                <span><i class="legend-swatch legend-swatch--normal"></i>Normales</span>
+                <input id="toggle-normals" type="checkbox" />
+              </label>
+            </div>
+          </section>
+        </aside>
+      </section>
+
+      <section class="analysis-grid">
+        <article class="analysis-card metrics-card">
+          <header>
+            <p class="section-kicker">Resumen topológico</p>
+            <h2>Entidades del modelo</h2>
+          </header>
+          <div class="metrics-row">
+            <div class="metric"><strong id="metric-v">8</strong><span>Vértices</span></div>
+            <div class="metric"><strong id="metric-e">12</strong><span>Aristas</span></div>
+            <div class="metric"><strong id="metric-f">6</strong><span>Caras</span></div>
+            <div class="metric metric--accent"><strong id="metric-chi">2</strong><span>Euler χ</span></div>
+          </div>
+        </article>
+
+        <article class="analysis-card checks-card">
+          <header>
+            <p class="section-kicker">Diagnóstico automático</p>
+            <h2>Comprobaciones</h2>
+          </header>
+          <ul class="check-list" id="check-list"></ul>
+        </article>
+
+        <article class="analysis-card entity-card">
+          <header>
+            <p class="section-kicker">Consulta local</p>
+            <h2>Entidad seleccionada</h2>
+          </header>
+          <div id="entity-details" class="entity-details">
+            <span class="entity-code">F1</span>
+            <div>
+              <strong>Cara frontal</strong>
+              <p>Selecciona una cara para consultar sus vértices y aristas.</p>
+            </div>
+          </div>
+        </article>
+      </section>
+
+      <section class="concept-note">
+        <div>
+          <p class="section-kicker">Idea central</p>
+          <h2>La apariencia no garantiza la validez.</h2>
+        </div>
+        <p>
+          Un modelo puede verse cerrado y aun contener errores de incidencia, orientación o geometría.
+          B-Rep exige coherencia entre la forma de las superficies y la conectividad que las organiza.
+        </p>
+      </section>
+    </main>
+
+    <footer class="site-footer">
+      <p>Representación de fronteras (B-Rep) · Computación Visual · UNMSM</p>
+      <p>Aplicación didáctica para fines académicos.</p>
+    </footer>
+
+    <script type="module" src="/src/main.js"></script>
+  </body>
+</html>
