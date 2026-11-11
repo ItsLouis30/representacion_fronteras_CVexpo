@@ -7,6 +7,7 @@
       name="description"
       content="Laboratorio interactivo para explorar, validar y construir modelos Boundary Representation (B-Rep)."
     />
+    <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
     <title>Laboratorio B-Rep | Computación Visual</title>
   </head>
   <body>
@@ -16,9 +17,23 @@
         <h1>Laboratorio B-Rep</h1>
         <p class="subtitle">Exploración, validación y construcción de fronteras tridimensionales.</p>
       </div>
+      <button class="primary-button tour-start" id="tour-start" type="button">Recorrido guiado (G)</button>
     </header>
 
     <main class="app-shell">
+      <section class="tour-bar is-hidden" id="tour-bar" aria-live="polite">
+        <div class="tour-copy">
+          <p class="section-kicker" id="tour-kicker"></p>
+          <h2 id="tour-title"></h2>
+          <p id="tour-text"></p>
+        </div>
+        <div class="tour-actions">
+          <button class="secondary-button" id="tour-prev" type="button">Anterior</button>
+          <button class="primary-button" id="tour-next" type="button">Siguiente (Espacio)</button>
+          <button class="text-button" id="tour-exit" type="button">Salir</button>
+        </div>
+      </section>
+
       <nav class="mode-tabs" aria-label="Modos del laboratorio">
         <button class="mode-tab is-active" data-mode="explore" type="button">
           <span>01</span> Explorar B-Rep
@@ -43,16 +58,17 @@
 
           <div class="canvas-wrap" id="canvas-wrap">
             <canvas id="brep-canvas" aria-label="Visualización tridimensional del modelo B-Rep"></canvas>
-            <div class="canvas-note">Arrastra para rotar · Rueda para acercar · Selecciona una cara</div>
+            <div class="canvas-note">Arrastra para rotar · Rueda para acercar · Clic en cara, arista o vértice · Teclas: 1 2 3 modos · ← → pasos · H semiaristas · N normales · R vista · G recorrido</div>
             <div class="formula-card" aria-live="polite">
               <span>Característica de Euler</span>
               <strong id="euler-formula">8 − 12 + 6 = 2</strong>
+              <small id="euler-delta"></small>
             </div>
           </div>
         </div>
 
         <aside class="control-panel">
-          <section class="control-section mode-section" data-section="explore">
+          <section class="control-section mode-section" data-section="explore validate">
             <div class="section-number">01</div>
             <div class="section-copy">
               <h3>Modelo de estudio</h3>
@@ -63,7 +79,37 @@
               <option value="cube">Cubo</option>
               <option value="tetrahedron">Tetraedro</option>
               <option value="prism">Prisma triangular</option>
+              <option value="torus">Marco (toro, género 1)</option>
+              <option value="cylinder">Cilindro teselado</option>
             </select>
+            <div class="tolerance-control is-hidden" id="sides-control">
+              <label class="field-label" for="sides-range">Lados de la teselación</label>
+              <input id="sides-range" type="range" min="3" max="48" step="1" value="12" />
+              <p id="sides-value"></p>
+              <p class="tolerance-hint">La malla crece con n. El B-Rep exacto del cilindro es constante: 2 vértices, 3 aristas y 3 caras (dos tapas planas y una cara cilíndrica).</p>
+            </div>
+          </section>
+
+          <section class="control-section mode-section edit-section" data-section="explore">
+            <div class="section-copy">
+              <h3>Geometría frente a topología</h3>
+              <p>Mueve los controles: cambian coordenadas y volumen, pero no V, E, F ni las conexiones.</p>
+            </div>
+            <label class="slider-row" for="tf-translate"><span>Trasladar en X</span>
+              <input id="tf-translate" type="range" min="-1.5" max="1.5" step="0.05" value="0" /></label>
+            <label class="slider-row" for="tf-scale"><span>Escalar</span>
+              <input id="tf-scale" type="range" min="0.5" max="1.4" step="0.05" value="1" /></label>
+            <label class="slider-row" for="tf-vertex"><span>Desplazar V1</span>
+              <input id="tf-vertex" type="range" min="0" max="0.9" step="0.05" value="0" /></label>
+            <button class="text-button" id="tf-reset" type="button">Restablecer geometría</button>
+            <div class="section-copy edit-copy">
+              <h3>Subdividir una cara</h3>
+              <p>Selecciona una cara de 4 o más vértices y aplica MEF sobre su diagonal.</p>
+            </div>
+            <div class="step-actions">
+              <button class="secondary-button" id="undo-subdivide" type="button" disabled>Deshacer (KEF)</button>
+              <button class="primary-button" id="subdivide-face" type="button" disabled>Subdividir (MEF)</button>
+            </div>
           </section>
 
           <section class="control-section mode-section is-hidden" data-section="validate">
@@ -97,6 +143,20 @@
                 <span class="defect-dot"></span>
                 Autointersección
               </button>
+              <button class="defect-button" data-defect="flipall" type="button">
+                <span class="defect-dot"></span>
+                Invertir todo el sólido
+              </button>
+              <button class="defect-button" data-defect="tolerance" type="button">
+                <span class="defect-dot"></span>
+                Vértices casi coincidentes (ε)
+              </button>
+            </div>
+            <div class="tolerance-control is-hidden" id="tolerance-control">
+              <label class="field-label" for="tolerance-range">Tolerancia de fusión</label>
+              <input id="tolerance-range" type="range" min="0" max="2.5" step="0.01" value="0" />
+              <p id="tolerance-value">ε = 0.00</p>
+              <p class="tolerance-hint">Una cara está separada 0.03 del resto. Con ε pequeño la frontera queda abierta; con ε excesivo se fusionan vértices distintos.</p>
             </div>
           </section>
 
@@ -104,20 +164,20 @@
             <div class="section-number">03</div>
             <div class="section-copy">
               <h3>Operadores de Euler</h3>
-              <p>Construye un prisma mediante una secuencia didáctica de operaciones topológicas.</p>
+              <p>Construye un cubo operador por operador. La fórmula de Euler se cumple en cada paso.</p>
             </div>
             <div class="operator-card">
               <span id="operator-name">MVFS</span>
               <strong id="operator-title">Crear estructura inicial</strong>
-              <p id="operator-description">Se crea el primer vértice, una cara y la envolvente inicial.</p>
+              <p id="operator-description">Nacen V1, una cara y la envolvente. Ya se cumple 1 − 0 + 1 = 2.</p>
             </div>
             <div class="step-progress" aria-label="Progreso de construcción">
-              <span id="step-label">Paso 1 de 8</span>
+              <span id="step-label">Paso 1 de 13</span>
               <div class="progress-track"><div id="progress-bar"></div></div>
             </div>
             <div class="step-actions">
               <button class="secondary-button" id="previous-step" type="button">Anterior</button>
-              <button class="primary-button" id="next-step" type="button">Siguiente paso</button>
+              <button class="primary-button" id="next-step" type="button">Aplicar MEV</button>
             </div>
           </section>
 
@@ -143,6 +203,10 @@
                 <span><i class="legend-swatch legend-swatch--normal"></i>Normales</span>
                 <input id="toggle-normals" type="checkbox" />
               </label>
+              <label class="toggle-row">
+                <span><i class="legend-swatch legend-swatch--halfedge"></i>Semiaristas</span>
+                <input id="toggle-halfedges" type="checkbox" />
+              </label>
             </div>
           </section>
         </aside>
@@ -159,12 +223,13 @@
             <div class="metric"><strong id="metric-e">12</strong><span>Aristas</span></div>
             <div class="metric"><strong id="metric-f">6</strong><span>Caras</span></div>
             <div class="metric metric--accent"><strong id="metric-chi">2</strong><span>Euler χ</span></div>
+            <div class="metric"><strong id="metric-volume">8.00</strong><span>Volumen</span></div>
           </div>
         </article>
 
         <article class="analysis-card checks-card">
           <header>
-            <p class="section-kicker">Diagnóstico automático</p>
+            <p class="section-kicker">Validación jerárquica</p>
             <h2>Comprobaciones</h2>
           </header>
           <ul class="check-list" id="check-list"></ul>
@@ -183,6 +248,35 @@
             </div>
           </div>
         </article>
+      </section>
+
+      <section class="halfedge-panel">
+        <header>
+          <div>
+            <p class="section-kicker">Estructura de datos</p>
+            <h2>Tabla Half-Edge</h2>
+          </div>
+          <span class="halfedge-count" id="halfedge-count"></span>
+        </header>
+        <div class="halfedge-scroll">
+          <table class="halfedge-table">
+            <thead>
+              <tr><th>Semiarista</th><th>Origen → destino</th><th>Cara</th><th>next</th><th>prev</th><th>twin</th></tr>
+            </thead>
+            <tbody id="halfedge-body"></tbody>
+          </table>
+        </div>
+      </section>
+
+      <section class="halfedge-panel" id="structure-panel">
+        <header>
+          <div>
+            <p class="section-kicker">Capítulo III en vivo</p>
+            <h2>Comparación de estructuras de datos</h2>
+          </div>
+          <span class="halfedge-count" id="structure-query"></span>
+        </header>
+        <div class="structure-grid" id="structure-grid"></div>
       </section>
 
       <section class="concept-note">
